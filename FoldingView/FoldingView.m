@@ -37,7 +37,7 @@ typedef NS_ENUM(NSInteger, LayerSection) {
 @property(nonatomic)UIView *handleView;
 @property(nonatomic)CALayer *superViewLayer;
 @property(nonatomic)UIPanGestureRecognizer *foldGestureRecognizer;
-@property(nonatomic)CALayer *scaleLayer;
+@property(nonatomic)CATransformLayer *scaleLayer;
 @property(nonatomic)CGFloat angle;
 @property(nonatomic)CGFloat translationValue;
 @property(nonatomic)NSBlockOperation *translationCalculation;
@@ -54,12 +54,12 @@ typedef NS_ENUM(NSInteger, LayerSection) {
         [self addSubview:_webView];
         _handleView=[[UIView alloc] initWithFrame:CGRectMake(0, 0, self.bounds.size.width, 100)];
         _handleView.userInteractionEnabled=YES;
+        _scaleLayer=[CATransformLayer layer];
+        _scaleLayer.frame=self.bounds;
         [self addSubview:_handleView];
+        [self.layer addSublayer:_scaleLayer];
         [self addGestureRecognizers];
-        
-        
-        
-}
+    }
     return self;
 }
 
@@ -113,7 +113,7 @@ typedef NS_ENUM(NSInteger, LayerSection) {
     
     [self.topView addSublayer:self.backLayer];
     [self.topView addSublayer:self.topShadowLayer];
-    [self.layer addSublayer:self.topView];
+    [self.scaleLayer addSublayer:self.topView];
     
 }
 
@@ -135,7 +135,7 @@ typedef NS_ENUM(NSInteger, LayerSection) {
     self.bottomShadowLayer.opacity = 0;
     
     [self.bottomView addSublayer:self.bottomShadowLayer];
-    [self.layer addSublayer:self.bottomView];
+    [self.scaleLayer addSublayer:self.bottomView];
 }
 
 - (void)addGestureRecognizers
@@ -148,10 +148,11 @@ typedef NS_ENUM(NSInteger, LayerSection) {
 - (void)handlePan:(UIPanGestureRecognizer *)recognizer
 {
     CGPoint location = [recognizer locationInView:self];
-    dispatch_async(dispatch_get_global_queue( DISPATCH_QUEUE_PRIORITY_HIGH,0), ^(void){
+    /*dispatch_async(dispatch_get_global_queue( DISPATCH_QUEUE_PRIORITY_HIGH,0), ^(void){
       self.translationValue= -((self.bounds.size.height/2)-self.bottomView.frame.size.height)/2.000f;
-});
-    
+});*/
+    self.translationValue= -((self.bounds.size.height/2)-self.bottomView.frame.size.height)/2.000f;
+
     if (recognizer.state == UIGestureRecognizerStateBegan) {
         
         self.initialLocation = location.y;
@@ -190,16 +191,16 @@ typedef NS_ENUM(NSInteger, LayerSection) {
     if ([self isLocation:location inView:self]) {
         CGFloat conversionFactor = -M_PI / (CGRectGetHeight(self.bounds) - self.initialLocation);
         CGFloat angle=(-([[self.topView valueForKeyPath:@"transform.rotation.x"]floatValue]*(180/M_PI)));
-        const CGFloat scaleConversionFactor= 1-(angle/400);
-        const CGFloat maxScaleAngle=75.0f;
-        const CGFloat maxDownScaleConversionFactor= 1-(maxScaleAngle/400);
+        const CGFloat scaleConversionFactor= 1-(angle/650);
+        const CGFloat maxScaleAngle=90.0f;
+        const CGFloat maxDownScaleConversionFactor= 1-(maxScaleAngle/650);
         POPBasicAnimation *rotationAnimation = [POPBasicAnimation animationWithPropertyNamed:kPOPLayerRotationX];
-        POPBasicAnimation *translateAnimation=[POPBasicAnimation animationWithPropertyNamed:kPOPLayerTranslationY];
+        //POPBasicAnimation *translateAnimation=[POPBasicAnimation animationWithPropertyNamed:kPOPLayerTranslationY];
         POPBasicAnimation *scaleAnimation=[POPBasicAnimation animationWithPropertyNamed:kPOPLayerScaleXY];
         
-        translateAnimation.toValue=@(self.translationValue);
-       translateAnimation.duration=0;
-        scaleAnimation.duration=0.0001;
+        //translateAnimation.toValue=@(self.translationValue);
+       //translateAnimation.duration=0;
+        scaleAnimation.duration=0.01;
         if (angle > 0  && angle <= maxScaleAngle) {
             scaleAnimation.toValue=[NSValue valueWithCGSize:CGSizeMake(scaleConversionFactor,scaleConversionFactor)];
         }
@@ -210,13 +211,12 @@ typedef NS_ENUM(NSInteger, LayerSection) {
             scaleAnimation.toValue=[NSValue valueWithCGSize:CGSizeMake(1, 1)];
         }
         
-        rotationAnimation.duration =0.0001;
+        rotationAnimation.duration =0.000001;
         rotationAnimation.toValue = @((location.y-self.initialLocation)*conversionFactor);
         [self.topView pop_addAnimation:rotationAnimation forKey:@"rotationAnimation"];
-        [self.bottomView pop_addAnimation:translateAnimation forKey:@"translateAnimation"];
-
-        [self.topView pop_addAnimation:scaleAnimation forKey:@"scaleAnimation"];
-        [self.bottomView pop_addAnimation:scaleAnimation forKey:@"scaleAnimation"];
+       // [self.bottomView pop_addAnimation:translateAnimation forKey:@"translateAnimation"];
+        [self.scaleLayer pop_addAnimation:scaleAnimation forKey:@"scaleAnimation"];
+        //[self.bottomView pop_addAnimation:scaleAnimation forKey:@"scaleAnimation"];
 }
     else {
         recognizer.enabled = NO;
@@ -231,14 +231,10 @@ typedef NS_ENUM(NSInteger, LayerSection) {
 }
 
 -(void)rescaleLayer{
-    const CGFloat scaleConversionFactor= 1-(self.angle/400);
-    const CGFloat maxScaleAngle=75.0f;
-    const CGFloat maxDownScaleConversionFactor= 1-(maxScaleAngle/400);
-    dispatch_async(dispatch_get_global_queue( DISPATCH_QUEUE_PRIORITY_HIGH,0), ^(void){
-        self.translationValue= -((self.bounds.size.height/2)-self.bottomView.frame.size.height)/2.000f;
-    });
-    POPSpringAnimation *scaleAnimation=[POPSpringAnimation animationWithPropertyNamed:kPOPLayerScaleXY];
-    //scaleAnimation.duration=0.5;
+    const CGFloat scaleConversionFactor= 1-(self.angle/650);
+    const CGFloat maxScaleAngle=90.0f;
+    const CGFloat maxDownScaleConversionFactor= 1-(maxScaleAngle/650);
+        POPSpringAnimation *scaleAnimation=[POPSpringAnimation animationWithPropertyNamed:kPOPLayerScaleXY];
     if (self.angle > 0  && self.angle <= maxScaleAngle) {
         scaleAnimation.toValue=[NSValue valueWithCGSize:CGSizeMake(scaleConversionFactor, scaleConversionFactor)];
     }
@@ -248,15 +244,7 @@ typedef NS_ENUM(NSInteger, LayerSection) {
     else{
         scaleAnimation.toValue=[NSValue valueWithCGSize:CGSizeMake(1, 1)];
     }
-    POPSpringAnimation *translateAnimation=[POPSpringAnimation animationWithPropertyNamed:kPOPLayerTranslationY];
-    
-    translateAnimation.toValue=@(self.translationValue);
-    [self.bottomView pop_addAnimation:translateAnimation forKey:@"translateAnimation"];
-
-    [self.topView pop_addAnimation:scaleAnimation forKey:@"scaleAnimation"];
-    [self.bottomView pop_addAnimation:scaleAnimation forKey:@"scaleAnimation"];
-
-
+    [self.scaleLayer pop_addAnimation:scaleAnimation forKey:@"scaleAnimation"];
 }
 - (void)rotateToOriginWithVelocity:(CGFloat)velocity
 {
@@ -284,7 +272,7 @@ typedef NS_ENUM(NSInteger, LayerSection) {
 - (CATransform3D)transform3D
 {
     CATransform3D transform = CATransform3DIdentity;
-    transform.m34 = 2.5 / -2000;
+    transform.m34 = 2.5 / -4600;
     return transform;
 }
 
