@@ -39,31 +39,51 @@ typedef NS_ENUM(NSInteger, LayerSection) {
 @property(nonatomic)UIPanGestureRecognizer *foldGestureRecognizer;
 @property(nonatomic)CATransformLayer *scaleLayer;
 @property(nonatomic)CGFloat angle;
-@property(nonatomic)CGFloat translationValue;
-@property(nonatomic)NSBlockOperation *translationCalculation;
+//@property(nonatomic)CGFloat translationValue;
 @end
 
 @implementation FoldingView
+/*-(void)willMoveToSuperview:(UIView *)newSuperview{
+    [super willMoveToSuperview:newSuperview];
+    NSLog(@"aa");
+    [self createFoldLayers];
 
+    [self rotateToOriginWithVelocity:0];
+}*/
 - (id)initWithFrame:(CGRect)frame request:(NSURLRequest*)request
 {
     self = [super initWithFrame:frame];
     if (self) {
+        self.backgroundColor=[UIColor clearColor];
         _webView=[[WKWebView alloc] initWithFrame:CGRectMake(0, 0, self.bounds.size.width,self.bounds.size.height)];
         [_webView loadRequest:request];
         [self addSubview:_webView];
-        _handleView=[[UIView alloc] initWithFrame:CGRectMake(0, 0, self.bounds.size.width, 100)];
-        _handleView.userInteractionEnabled=YES;
-        _scaleLayer=[CATransformLayer layer];
-        _scaleLayer.frame=self.bounds;
-        [self addSubview:_handleView];
-        [self.layer addSublayer:_scaleLayer];
+       // [self createFoldLayers];
         [self addGestureRecognizers];
-        //self.previousLocation=0;
+      //  [self rotateToOriginWithVelocity:0];
     }
     return self;
 }
-
+-(CALayer*)scaleLayer{
+    if (!_scaleLayer) {
+        _scaleLayer=[CATransformLayer layer];
+        _scaleLayer.frame=self.bounds;
+    }
+    if ([_scaleLayer superlayer] != self.layer) {
+        [self.layer addSublayer:_scaleLayer];
+    }
+    return _scaleLayer;
+}
+-(UIView*)handleView{
+    if (!_handleView){
+        _handleView=[[UIView alloc] initWithFrame:CGRectMake(0, 0, self.bounds.size.width, 100)];
+        _handleView.userInteractionEnabled=YES;
+        if ([_handleView superview]!=self) {
+            [self addSubview:_handleView];
+        }
+    }
+    return _handleView;
+}
 #pragma mark - Private Instance methods
 - (void)updateBottomAndTopView {
     [self updateContentSnapshot:self.webView afterScreenUpdate:NO];
@@ -146,27 +166,32 @@ typedef NS_ENUM(NSInteger, LayerSection) {
     [self.handleView addGestureRecognizer:self.foldGestureRecognizer];
 }
 
+- (void)createFoldLayers
+{
+    self.webView.scrollView.scrollEnabled=NO;
+    [self updateBottomAndTopView];
+    self.superViewLayer.contents=(__bridge id)self.superViewImage.CGImage;
+    UIImage *topImage = [self imageForSection:LayerSectionTop withImage:self.image];
+    // UIImage *backImage=[topImage blurredImage];
+    self.topView.contents = (__bridge id)(topImage.CGImage);
+    //self.backLayer.contents=(__bridge id)(backImage.CGImage);
+    UIImage *bottomImage = [self imageForSection:LayerSectionBottom withImage:self.image];
+    self.bottomView.contents = (__bridge id)(bottomImage.CGImage);
+    self.topShadowLayer.frame = self.topView.bounds;
+    self.bottomShadowLayer.frame = self.bottomView.bounds;
+}
+
 - (void)handlePan:(UIPanGestureRecognizer *)recognizer
 {
     CGPoint location = [recognizer locationInView:self];
     CGPoint startingPoint=[recognizer translationInView:self];
   
-    self.translationValue= -((self.bounds.size.height/2)-self.bottomView.frame.size.height)/2.000f;
+    //self.translationValue= -((self.bounds.size.height/2)-self.bottomView.frame.size.height)/2.000f;
 
     if (recognizer.state == UIGestureRecognizerStateBegan) {
         
         self.initialLocation = location.y;
-        self.webView.scrollView.scrollEnabled=NO;
-        [self updateBottomAndTopView];
-        self.superViewLayer.contents=(__bridge id)self.superViewImage.CGImage;
-        UIImage *topImage = [self imageForSection:LayerSectionTop withImage:self.image];
-       // UIImage *backImage=[topImage blurredImage];
-        self.topView.contents = (__bridge id)(topImage.CGImage);
-        //self.backLayer.contents=(__bridge id)(backImage.CGImage);
-        UIImage *bottomImage = [self imageForSection:LayerSectionBottom withImage:self.image];
-        self.bottomView.contents = (__bridge id)(bottomImage.CGImage);
-        self.topShadowLayer.frame = self.topView.bounds;
-        self.bottomShadowLayer.frame = self.bottomView.bounds;
+        [self createFoldLayers];
     }
     
     if ([[self.topView valueForKeyPath:@"transform.rotation.x"] floatValue] < -M_PI_2) {
@@ -198,8 +223,8 @@ typedef NS_ENUM(NSInteger, LayerSection) {
         POPBasicAnimation *scaleAnimation=[POPBasicAnimation animationWithPropertyNamed:kPOPLayerScaleXY];
         POPBasicAnimation *translateAnimation=[POPBasicAnimation animationWithPropertyNamed:kPOPLayerTranslationX];
         translateAnimation.toValue=@(startingPoint.x);
-        translateAnimation.duration=0.01;
-        scaleAnimation.duration=0.01;
+        translateAnimation.duration=0.000001;
+        scaleAnimation.duration=0.000001;
         if (angle > 0  && angle <= maxScaleAngle) {
             scaleAnimation.toValue=[NSValue valueWithCGSize:CGSizeMake(scaleConversionFactor,scaleConversionFactor)];
         }
@@ -222,9 +247,16 @@ typedef NS_ENUM(NSInteger, LayerSection) {
     }
     
     if (recognizer.state == UIGestureRecognizerStateEnded || recognizer.state == UIGestureRecognizerStateCancelled) {
+        CGFloat angle=(-([[self.topView valueForKeyPath:@"transform.rotation.x"]floatValue]*(180/M_PI)));
+
+        if (angle < 30){
         [self rotateToOriginWithVelocity:0];
         [self rescaleLayer];
-        recognizer.enabled=NO;
+            recognizer.enabled=NO;}
+        else{
+            [self closeWithVelocity:0];
+            
+        }
     }
 }
 
@@ -246,6 +278,26 @@ typedef NS_ENUM(NSInteger, LayerSection) {
     }
     [self.scaleLayer pop_addAnimation:scaleAnimation forKey:@"scaleAnimation"];
     [self.scaleLayer pop_addAnimation:translateAnimation forKey:@"translateAnimation"];
+}
+
+-(void)closeWithVelocity:(CGFloat)velocity{
+    POPSpringAnimation *rotateToCloseAnimation = [POPSpringAnimation animationWithPropertyNamed:kPOPLayerRotationX];
+    POPBasicAnimation *scaleToCloseAnimation = [POPBasicAnimation animationWithPropertyNamed:kPOPLayerScaleXY];
+    scaleToCloseAnimation.toValue=[NSValue valueWithCGSize:CGSizeMake(0, 0)];
+    scaleToCloseAnimation.duration=0.4f;
+    if (velocity > 0) {
+        rotateToCloseAnimation.velocity = @(velocity);
+    }
+    rotateToCloseAnimation.springBounciness = 0.0f;
+    rotateToCloseAnimation.dynamicsMass = 2.0f;
+    rotateToCloseAnimation.dynamicsTension = 200;
+    rotateToCloseAnimation.toValue = @(-M_PI);
+    rotateToCloseAnimation.delegate = self;
+    [scaleToCloseAnimation setCompletionBlock:^(POPAnimation *anim, BOOL finished) {
+        [self removeFromSuperview];
+    }];
+    [self.topView pop_addAnimation:rotateToCloseAnimation forKey:@"rotationToCloseAnimation"];
+    [self.scaleLayer pop_addAnimation:scaleToCloseAnimation forKey:@"scaleToCloseAnimation"];
 }
 - (void)rotateToOriginWithVelocity:(CGFloat)velocity
 {

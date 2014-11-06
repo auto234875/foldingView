@@ -9,10 +9,11 @@
 #import "FoldingViewController.h"
 #import "FoldingView.h"
 #import <QuartzCore/QuartzCore.h>
+#import "POP/POP.h"
 
 @interface FoldingViewController()<UIWebViewDelegate>
 - (void)addFoldView;
-@property(nonatomic) FoldingView *foldView;
+//@property(nonatomic) FoldingView *foldView;
 @end
 
 @implementation FoldingViewController
@@ -46,10 +47,13 @@
 {
     NSURL *url=[NSURL URLWithString:@"http://www.engadget.com"];
     NSURLRequest *request=[NSURLRequest requestWithURL:url];
-    CGRect frame = CGRectMake(0, 0, self.view.bounds.size.width, self.view.bounds.size.height);
-    self.foldView = [[FoldingView alloc] initWithFrame:frame request:request];
-    [self.foldView captureSuperViewScreenShot:self.view afterScreenUpdate:NO];
-    [self.view addSubview:self.foldView];
+    CGRect frame = CGRectMake(0, self.view.bounds.size.height, self.view.bounds.size.width, self.view.bounds.size.height);
+    FoldingView *foldView = [[FoldingView alloc] initWithFrame:frame request:request];
+    [foldView captureSuperViewScreenShot:self.view afterScreenUpdate:NO];
+    [self.view addSubview:foldView];
+    POPSpringAnimation *segueAnimation = [POPSpringAnimation animationWithPropertyNamed:kPOPViewFrame];
+    segueAnimation.toValue=[NSValue valueWithCGRect:CGRectMake(0, 0, self.view.bounds.size.width, self.view.bounds.size.height)];
+    [foldView pop_addAnimation:segueAnimation forKey:@"segueAnimation"];
 }
 
 
