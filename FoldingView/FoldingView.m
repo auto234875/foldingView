@@ -16,7 +16,7 @@ typedef NS_ENUM(NSInteger, LayerSection) {
     LayerSectionBottom
 };
 
-@interface FoldingView() <POPAnimationDelegate,UIScrollViewDelegate,UIWebViewDelegate>
+@interface FoldingView() <POPAnimationDelegate,UIGestureRecognizerDelegate>
 - (void)addTopView;
 - (void)addBottomView;
 - (void)addGestureRecognizers;
@@ -34,22 +34,14 @@ typedef NS_ENUM(NSInteger, LayerSection) {
 @property(nonatomic) CAGradientLayer *topShadowLayer;
 @property(nonatomic) NSUInteger initialLocation;
 @property(nonatomic)WKWebView *webView;
-@property(nonatomic)UIView *handleView;
 @property(nonatomic)CALayer *superViewLayer;
 @property(nonatomic)UIPanGestureRecognizer *foldGestureRecognizer;
 @property(nonatomic)CATransformLayer *scaleLayer;
 @property(nonatomic)CGFloat angle;
-//@property(nonatomic)CGFloat translationValue;
 @end
 
 @implementation FoldingView
-/*-(void)willMoveToSuperview:(UIView *)newSuperview{
-    [super willMoveToSuperview:newSuperview];
-    NSLog(@"aa");
-    [self createFoldLayers];
 
-    [self rotateToOriginWithVelocity:0];
-}*/
 - (id)initWithFrame:(CGRect)frame request:(NSURLRequest*)request
 {
     self = [super initWithFrame:frame];
@@ -58,11 +50,13 @@ typedef NS_ENUM(NSInteger, LayerSection) {
         _webView=[[WKWebView alloc] initWithFrame:CGRectMake(0, 0, self.bounds.size.width,self.bounds.size.height)];
         [_webView loadRequest:request];
         [self addSubview:_webView];
-       // [self createFoldLayers];
         [self addGestureRecognizers];
-      //  [self rotateToOriginWithVelocity:0];
     }
     return self;
+}
+
+-(BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer{
+    return YES;
 }
 -(CALayer*)scaleLayer{
     if (!_scaleLayer) {
@@ -73,16 +67,6 @@ typedef NS_ENUM(NSInteger, LayerSection) {
         [self.layer addSublayer:_scaleLayer];
     }
     return _scaleLayer;
-}
--(UIView*)handleView{
-    if (!_handleView){
-        _handleView=[[UIView alloc] initWithFrame:CGRectMake(0, 0, self.bounds.size.width, 100)];
-        _handleView.userInteractionEnabled=YES;
-        if ([_handleView superview]!=self) {
-            [self addSubview:_handleView];
-        }
-    }
-    return _handleView;
 }
 #pragma mark - Private Instance methods
 - (void)updateBottomAndTopView {
@@ -163,7 +147,8 @@ typedef NS_ENUM(NSInteger, LayerSection) {
 {
     self.foldGestureRecognizer= [[UIPanGestureRecognizer alloc] initWithTarget:self
                                                                                            action:@selector(handlePan:)];
-    [self.handleView addGestureRecognizer:self.foldGestureRecognizer];
+    self.foldGestureRecognizer.delegate=self;
+    [self addGestureRecognizer:self.foldGestureRecognizer];
 }
 
 - (void)createFoldLayers
@@ -180,13 +165,31 @@ typedef NS_ENUM(NSInteger, LayerSection) {
     self.topShadowLayer.frame = self.topView.bounds;
     self.bottomShadowLayer.frame = self.bottomView.bounds;
 }
+-(BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer{
+    if (gestureRecognizer==self.foldGestureRecognizer) {
+        CGPoint location = [gestureRecognizer locationInView:self];
 
+    if (self.webView.scrollView.contentOffset.y==0) {
+        return YES;
+    }
+    else{
+        if (location.y<=60) {
+            return YES;
+        }
+        else{
+            return NO;
+        }
+    }
+    }
+    else{
+        return YES;
+    }
+}
 - (void)handlePan:(UIPanGestureRecognizer *)recognizer
 {
     CGPoint location = [recognizer locationInView:self];
     CGPoint startingPoint=[recognizer translationInView:self];
   
-    //self.translationValue= -((self.bounds.size.height/2)-self.bottomView.frame.size.height)/2.000f;
 
     if (recognizer.state == UIGestureRecognizerStateBegan) {
         
@@ -214,32 +217,8 @@ typedef NS_ENUM(NSInteger, LayerSection) {
     }
     
     if ([self isLocation:location inView:self]) {
-        CGFloat conversionFactor = -M_PI / (CGRectGetHeight(self.bounds) - self.initialLocation);
         CGFloat angle=(-([[self.topView valueForKeyPath:@"transform.rotation.x"]floatValue]*(180/M_PI)));
-        const CGFloat scaleConversionFactor= 1-(angle/650);
-        const CGFloat maxScaleAngle=90.0f;
-        const CGFloat maxDownScaleConversionFactor= 1-(maxScaleAngle/650);
-        POPBasicAnimation *rotationAnimation = [POPBasicAnimation animationWithPropertyNamed:kPOPLayerRotationX];
-        POPBasicAnimation *scaleAnimation=[POPBasicAnimation animationWithPropertyNamed:kPOPLayerScaleXY];
-        POPBasicAnimation *translateAnimation=[POPBasicAnimation animationWithPropertyNamed:kPOPLayerTranslationX];
-        translateAnimation.toValue=@(startingPoint.x);
-        translateAnimation.duration=0.000001;
-        scaleAnimation.duration=0.000001;
-        if (angle > 0  && angle <= maxScaleAngle) {
-            scaleAnimation.toValue=[NSValue valueWithCGSize:CGSizeMake(scaleConversionFactor,scaleConversionFactor)];
-        }
-        else if (angle > maxScaleAngle){
-            scaleAnimation.toValue=[NSValue valueWithCGSize:CGSizeMake(maxDownScaleConversionFactor, maxDownScaleConversionFactor)];
-        }
-        else{
-            scaleAnimation.toValue=[NSValue valueWithCGSize:CGSizeMake(1, 1)];
-        }
-        
-        rotationAnimation.duration =0.000001;
-        rotationAnimation.toValue = @((location.y-self.initialLocation)*conversionFactor);
-        [self.scaleLayer pop_addAnimation:translateAnimation forKey:@"translateAnimation"];
-        [self.topView pop_addAnimation:rotationAnimation forKey:@"rotationAnimation"];
-        [self.scaleLayer pop_addAnimation:scaleAnimation forKey:@"scaleAnimation"];
+        [self animateViewWithRotation:angle translation:startingPoint.x initialLocation:self.initialLocation verticalPoint:location.y];
 }
     else {
         recognizer.enabled = NO;
@@ -259,7 +238,34 @@ typedef NS_ENUM(NSInteger, LayerSection) {
         }
     }
 }
-
+-(void)animateViewWithRotation:(CGFloat)angle translation:(CGFloat)startingpoint initialLocation:(NSUInteger)initialLocation verticalPoint:(CGFloat)verticalPoint{
+    CGFloat conversionFactor = -M_PI / (CGRectGetHeight(self.bounds) - self.initialLocation);
+    
+    const CGFloat scaleConversionFactor= 1-(angle/650);
+    const CGFloat maxScaleAngle=90.0f;
+    const CGFloat maxDownScaleConversionFactor= 1-(maxScaleAngle/650);
+    POPBasicAnimation *rotationAnimation = [POPBasicAnimation animationWithPropertyNamed:kPOPLayerRotationX];
+    POPBasicAnimation *scaleAnimation=[POPBasicAnimation animationWithPropertyNamed:kPOPLayerScaleXY];
+    POPBasicAnimation *translateAnimation=[POPBasicAnimation animationWithPropertyNamed:kPOPLayerTranslationX];
+    translateAnimation.toValue=@(startingpoint);
+    translateAnimation.duration=0.01;
+    scaleAnimation.duration=0.01;
+    if (angle > 0  && angle <= maxScaleAngle) {
+        scaleAnimation.toValue=[NSValue valueWithCGSize:CGSizeMake(scaleConversionFactor,scaleConversionFactor)];
+    }
+    else if (angle > maxScaleAngle){
+        scaleAnimation.toValue=[NSValue valueWithCGSize:CGSizeMake(maxDownScaleConversionFactor, maxDownScaleConversionFactor)];
+    }
+    else{
+        scaleAnimation.toValue=[NSValue valueWithCGSize:CGSizeMake(1, 1)];
+    }
+    
+    rotationAnimation.duration =0.01;
+    rotationAnimation.toValue = @((verticalPoint-self.initialLocation)*conversionFactor);
+    [self.scaleLayer pop_addAnimation:translateAnimation forKey:@"translateAnimation"];
+    [self.topView pop_addAnimation:rotationAnimation forKey:@"rotationAnimation"];
+    [self.scaleLayer pop_addAnimation:scaleAnimation forKey:@"scaleAnimation"];
+}
 -(void)rescaleLayer{
     const CGFloat scaleConversionFactor= 1-(self.angle/650);
     const CGFloat maxScaleAngle=90.0f;

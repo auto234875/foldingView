@@ -22,9 +22,7 @@
 		527F29D21A04C1E000E6F4EA /* FoldingViewTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 527F29D11A04C1E000E6F4EA /* FoldingViewTests.m */; };
 		52C37BFB1A04C31700D04EE3 /* FoldingView.m in Sources */ = {isa = PBXBuildFile; fileRef = 52C37BFA1A04C31700D04EE3 /* FoldingView.m */; };
 		52C37BFE1A04C32300D04EE3 /* FoldingViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 52C37BFD1A04C32300D04EE3 /* FoldingViewController.m */; };
-		52C37C001A04C32D00D04EE3 /* 1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 52C37BFF1A04C32D00D04EE3 /* 1.jpg */; };
 		52C37C031A04C3A000D04EE3 /* UIImage+Blur.m in Sources */ = {isa = PBXBuildFile; fileRef = 52C37C021A04C3A000D04EE3 /* UIImage+Blur.m */; };
-		52C37D171A04D26700D04EE3 /* 2.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = 52C37D161A04D26700D04EE3 /* 2.jpeg */; };
 		52C37D191A04D88C00D04EE3 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52C37D181A04D88C00D04EE3 /* QuartzCore.framework */; };
 /* End PBXBuildFile section */
 
@@ -61,10 +59,8 @@
 		52C37BFA1A04C31700D04EE3 /* FoldingView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FoldingView.m; sourceTree = "<group>"; };
 		52C37BFC1A04C32300D04EE3 /* FoldingViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FoldingViewController.h; sourceTree = "<group>"; };
 		52C37BFD1A04C32300D04EE3 /* FoldingViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FoldingViewController.m; sourceTree = "<group>"; };
-		52C37BFF1A04C32D00D04EE3 /* 1.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = 1.jpg; sourceTree = "<group>"; };
 		52C37C011A04C3A000D04EE3 /* UIImage+Blur.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "UIImage+Blur.h"; sourceTree = "<group>"; };
 		52C37C021A04C3A000D04EE3 /* UIImage+Blur.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "UIImage+Blur.m"; sourceTree = "<group>"; };
-		52C37D161A04D26700D04EE3 /* 2.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = 2.jpeg; sourceTree = "<group>"; };
 		52C37D181A04D88C00D04EE3 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		926EF6BB55079C93598FA43D /* Pods.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.debug.xcconfig; path = "Pods/Target Support Files/Pods/Pods.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -148,8 +144,6 @@
 				52C37BFD1A04C32300D04EE3 /* FoldingViewController.m */,
 				527F29BB1A04C1E000E6F4EA /* AppDelegate.h */,
 				527F29BC1A04C1E000E6F4EA /* AppDelegate.m */,
-				52C37BFF1A04C32D00D04EE3 /* 1.jpg */,
-				52C37D161A04D26700D04EE3 /* 2.jpeg */,
 				527F29BE1A04C1E000E6F4EA /* Images.xcassets */,
 				527F29B31A04C1E000E6F4EA /* Supporting Files */,
 			);
@@ -262,8 +256,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				52C37D171A04D26700D04EE3 /* 2.jpeg in Resources */,
-				52C37C001A04C32D00D04EE3 /* 1.jpg in Resources */,
 				527F29B71A04C1E000E6F4EA /* InfoPlist.strings in Resources */,
 				527F29BF1A04C1E000E6F4EA /* Images.xcassets in Resources */,
 			);
