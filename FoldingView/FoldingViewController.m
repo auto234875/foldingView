@@ -1,9 +1,9 @@
 //
-//  FoldViewController.m
-//  Popping
+//  AppDelegate.m
+//  FoldingView
 //
-//  Created by André Schneider on 20.06.14.
-//  Copyright (c) 2014 André Schneider. All rights reserved.
+//  Created by John on 11/1/14.
+//  Copyright (c) 2014 John. All rights reserved.
 //
 
 #import "FoldingViewController.h"
@@ -21,7 +21,7 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-    self.view.backgroundColor = [UIColor blackColor];
+    self.view.backgroundColor = [UIColor whiteColor];
     UIButton *button=[[UIButton alloc] initWithFrame:CGRectMake(0, 0, 200, 60)];
     button.center=self.view.center;
     button.backgroundColor=[UIColor whiteColor];

@@ -1,9 +1,9 @@
 //
-//  FoldView.h
-//  Popping
+//  AppDelegate.m
+//  FoldingView
 //
-//  Created by André Schneider on 22.06.14.
-//  Copyright (c) 2014 André Schneider. All rights reserved.
+//  Created by John on 11/1/14.
+//  Copyright (c) 2014 John. All rights reserved.
 //
 
 #import <UIKit/UIKit.h>
