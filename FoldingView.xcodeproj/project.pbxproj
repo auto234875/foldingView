@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		18CAB477024FBC8133837F55 /* libPods.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 33C6F0342D6DA70F9FA16634 /* libPods.a */; };
+		522513AA1A19999B00D14C00 /* down.png in Resources */ = {isa = PBXBuildFile; fileRef = 522513A91A19999B00D14C00 /* down.png */; };
 		527F29AD1A04C1DF00E6F4EA /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 527F29AC1A04C1DF00E6F4EA /* Foundation.framework */; };
 		527F29AF1A04C1DF00E6F4EA /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 527F29AE1A04C1DF00E6F4EA /* CoreGraphics.framework */; };
 		527F29B11A04C1DF00E6F4EA /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 527F29B01A04C1DF00E6F4EA /* UIKit.framework */; };
@@ -39,6 +40,7 @@
 /* Begin PBXFileReference section */
 		33C6F0342D6DA70F9FA16634 /* libPods.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libPods.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		45F8ED58F3674F6B790849C8 /* Pods.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.release.xcconfig; path = "Pods/Target Support Files/Pods/Pods.release.xcconfig"; sourceTree = "<group>"; };
+		522513A91A19999B00D14C00 /* down.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = down.png; sourceTree = "<group>"; };
 		527F29A91A04C1DF00E6F4EA /* FoldingView.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FoldingView.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		527F29AC1A04C1DF00E6F4EA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		527F29AE1A04C1DF00E6F4EA /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
@@ -145,6 +147,7 @@
 				527F29BB1A04C1E000E6F4EA /* AppDelegate.h */,
 				527F29BC1A04C1E000E6F4EA /* AppDelegate.m */,
 				527F29BE1A04C1E000E6F4EA /* Images.xcassets */,
+				522513A91A19999B00D14C00 /* down.png */,
 				527F29B31A04C1E000E6F4EA /* Supporting Files */,
 			);
 			path = FoldingView;
@@ -258,6 +261,7 @@
 			files = (
 				527F29B71A04C1E000E6F4EA /* InfoPlist.strings in Resources */,
 				527F29BF1A04C1E000E6F4EA /* Images.xcassets in Resources */,
+				522513AA1A19999B00D14C00 /* down.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

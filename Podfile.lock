@@ -1,10 +1,13 @@
 PODS:
+  - Colours (5.5.0)
   - pop (1.0.7)
 
 DEPENDENCIES:
+  - Colours
   - pop (~> 1.0)
 
 SPEC CHECKSUMS:
+  Colours: 7abeb0fdebe2da3d8bd7305aee0798375f51f5d8
   pop: 2f14a1ea61339767af9e66741b418c831b3844df
 
 COCOAPODS: 0.34.4

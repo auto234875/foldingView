@@ -10,13 +10,14 @@
 #import "UIImage+Blur.h"
 #import <POP/POP.h>
 #import <WebKit/WebKit.h>
+#import "Colours.h"
 
 typedef NS_ENUM(NSInteger, LayerSection) {
     LayerSectionTop,
     LayerSectionBottom
 };
 
-@interface FoldingView() <POPAnimationDelegate,UIGestureRecognizerDelegate>
+@interface FoldingView() <POPAnimationDelegate,UIGestureRecognizerDelegate,WKNavigationDelegate,UIScrollViewDelegate>
 - (void)addTopView;
 - (void)addBottomView;
 - (void)addGestureRecognizers;
@@ -39,24 +40,142 @@ typedef NS_ENUM(NSInteger, LayerSection) {
 @property(nonatomic)CATransformLayer *scaleLayer;
 @property(nonatomic)CGFloat angle;
 @property(nonatomic)BOOL adjustRotationSpeed;
+@property(nonatomic,strong)UIProgressView *progressView;
+@property(nonatomic,strong)UIButton *backButton;
+@property(nonatomic,strong)UIButton *forwardButton;
+@property(nonatomic)NSTimeInterval lastOffsetCapture;
+@property(nonatomic)CGPoint lastOffset;
+@property(nonatomic)CALayer *pullDownLayer;
+@property(nonatomic,strong)CALayer *imprintLayer1;
+@property(nonatomic,strong)CALayer *imprintLayer2;
 @end
 
 @implementation FoldingView
+-(void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView{
+    CGPoint translation = [scrollView.panGestureRecognizer translationInView:scrollView.superview];
+    
+    if(translation.y >0)
+    {
+        CGPoint currentOffset = scrollView.contentOffset;
+        NSTimeInterval currentTime = [NSDate timeIntervalSinceReferenceDate];
+        
+        NSTimeInterval timeDiff = currentTime - self.lastOffsetCapture;
+        if(timeDiff > 0.1) {
+            CGFloat distance = currentOffset.y - self.lastOffset.y;
+            //The multiply by 10, / 1000 isn't really necessary.......
+            CGFloat scrollSpeedNotAbs = (distance * 10) / 1000; //in pixels per millisecond
+            CGFloat scrollSpeed = fabsf(scrollSpeedNotAbs);
+            if (scrollSpeed > 0.5) {
+                [self setupNavigationButton];
+                self.pullDownLayer.opacity=0.4f;
+            } else {
+                NSLog(@"Slow");
+            }
+            
+            self.lastOffset = currentOffset;
+            self.lastOffsetCapture = currentTime;
+        }
+    } else if (translation.y < 0)
+    {
+        self.backButton.hidden=YES;
+        self.forwardButton.hidden=YES;
+        self.pullDownLayer.opacity=0;
+    }
 
+}
+-(void)setupNavigationButton{
+    if (self.webView.canGoBack) {
+        self.backButton.hidden=NO;
+    }
+    else{
+        self.backButton.hidden=YES;
+    }
+    if (self.webView.canGoForward) {
+        self.forwardButton.hidden=NO;
+    }
+    else{
+        self.forwardButton.hidden=YES;
+    }
+}
+-(void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation{
+    [self setupNavigationButton];
+}
 - (id)initWithFrame:(CGRect)frame request:(NSURLRequest*)request
 {
     self = [super initWithFrame:frame];
     if (self) {
-        self.backgroundColor=[UIColor clearColor];
-        _webView=[[WKWebView alloc] initWithFrame:CGRectMake(0, 0, self.bounds.size.width,self.bounds.size.height)];
+        self.backgroundColor=[UIColor whiteColor];
+        WKWebViewConfiguration *configuration=[[WKWebViewConfiguration alloc]init];
+        configuration.allowsInlineMediaPlayback=YES;
+        _webView=[[WKWebView alloc] initWithFrame:CGRectMake(0, 0, self.bounds.size.width,self.bounds.size.height) configuration:configuration];
+        _progressView=[[UIProgressView alloc] initWithFrame:CGRectMake(0, 0, _webView.bounds.size.width,0)];
+        _progressView.progressViewStyle=UIProgressViewStyleBar;
+        _progressView.alpha=0.3f;
+        _webView.navigationDelegate=self;
+        _progressView.tintColor=[UIColor blackColor];
+        _progressView.trackTintColor=[UIColor lightGrayColor];
+        [_webView addSubview:_progressView];
+        [_webView addObserver:self forKeyPath:@"estimatedProgress" options:NSKeyValueObservingOptionNew context:NULL];
         [_webView loadRequest:request];
+        _webView.scrollView.delegate=self;
+        _lastOffsetCapture=[NSDate timeIntervalSinceReferenceDate];
+        _lastOffset=_webView.scrollView.contentOffset;
+        _pullDownLayer=[CALayer layer];
+        _pullDownLayer.frame=CGRectMake(_webView.bounds.size.width/2 - 25,60, 50, 20);
+        _pullDownLayer.contents=(__bridge id)([UIImage imageNamed:@"down"].CGImage);
+        _pullDownLayer.opacity=0;
+        _pullDownLayer.contentsScale=[UIScreen mainScreen].scale;
+        
         [self addSubview:_webView];
+        [_webView.layer addSublayer:_pullDownLayer];
+        
+        _backButton=[[UIButton alloc] initWithFrame:CGRectMake(20, _webView.bounds.size.height-50, 30, 30)];
+        _backButton.backgroundColor=[UIColor clearColor];
+        _backButton.alpha=0.4f;
+        [_backButton setBackgroundImage:[UIImage imageNamed:@"previous.png"] forState:UIControlStateNormal];
+        [_backButton addTarget:self action:@selector(goBack) forControlEvents:UIControlEventTouchUpInside];
+        [_webView addSubview:_backButton];
+        _forwardButton=[[UIButton alloc] initWithFrame:CGRectMake(110, _webView.bounds.size.height-50, 30, 30)];
+        _forwardButton.backgroundColor=[UIColor clearColor];
+        _forwardButton.alpha=0.4f;
+        [_forwardButton setBackgroundImage:[UIImage imageNamed:@"forward.png"] forState:UIControlStateNormal];
+        [_forwardButton addTarget:self action:@selector(goForward) forControlEvents:UIControlEventTouchUpInside];
+        [_webView addSubview:_forwardButton];
         [self addGestureRecognizers];
         _adjustRotationSpeed=YES;
     }
     return self;
 }
 
+-(void)goBack{
+    [self.webView goBack];
+}
+-(void)goForward{
+    [self.webView goForward];
+}
+-(void)dealloc{
+    [self.webView removeObserver:self forKeyPath:@"estimatedProgress"];
+    [self.webView setNavigationDelegate:nil];
+    [self.webView setUIDelegate:nil];
+    [self.webView.scrollView setDelegate:nil];
+    [self.foldGestureRecognizer setDelegate:nil];
+}
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
+    if ([keyPath isEqualToString:@"estimatedProgress"] && object == self.webView) {
+        if (self.webView.estimatedProgress==1.0f) {
+            self.progressView.progress=0;
+            self.progressView.trackTintColor=[UIColor clearColor];
+        }
+        else{
+            self.progressView.trackTintColor=[UIColor lightGrayColor];
+            [self.progressView setProgress:self.webView.estimatedProgress animated:YES];
+        }
+    }
+    else {
+        // Make sure to call the superclass's implementation in the else block in case it is also implementing KVO
+        [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
+    }
+}
 -(BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer{
     return YES;
 }
@@ -72,13 +191,13 @@ typedef NS_ENUM(NSInteger, LayerSection) {
 }
 
 - (void)updateBottomAndTopView {
-    [self updateContentSnapshot:self.webView afterScreenUpdate:NO];
+    [self updateContentSnapshot:self.webView afterScreenUpdate:YES];
     [self addTopView];
     [self addBottomView];
 }
 - (void)updateContentSnapshot:(UIView *)view afterScreenUpdate:(BOOL)update
 {
-    UIGraphicsBeginImageContextWithOptions(view.bounds.size, NO,0);
+    UIGraphicsBeginImageContextWithOptions(view.bounds.size, update,0);
     [view drawViewHierarchyInRect:view.bounds afterScreenUpdates:update];
     self.image=UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
@@ -86,7 +205,7 @@ typedef NS_ENUM(NSInteger, LayerSection) {
 
 - (void)captureSuperViewScreenShot:(UIView *)view afterScreenUpdate:(BOOL)update
 {
-    UIGraphicsBeginImageContextWithOptions(view.bounds.size, NO,0);
+    UIGraphicsBeginImageContextWithOptions(view.bounds.size, update,0);
     [view drawViewHierarchyInRect:view.bounds afterScreenUpdates:update];
     self.superViewImage=UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
@@ -102,12 +221,21 @@ typedef NS_ENUM(NSInteger, LayerSection) {
                                   0.f,
                                   CGRectGetWidth(self.webView.bounds),
                                   CGRectGetMidY(self.webView.bounds));
-    self.topView.backgroundColor=[UIColor clearColor].CGColor;
+    self.topView.backgroundColor=[UIColor whiteColor].CGColor;
     self.topView.anchorPoint = CGPointMake(0.5, 1.0);
     self.topView.position = CGPointMake(CGRectGetMidX(self.webView.frame), CGRectGetMidY(self.webView.frame));
     self.topView.transform = [self transform3D];
     self.topView.contentsGravity = kCAGravityResizeAspect;
     self.topView.allowsEdgeAntialiasing=YES;
+    //self.topView.shadowColor=[UIColor blackColor].CGColor;
+    //self.topView.shadowOffset=CGSizeMake(0, 0);
+    //self.topView.shadowOpacity = 1;
+    //self.topView.shadowRadius = 50.0;
+    //self.topView.shouldRasterize=YES;
+    /*CALayer *imprintLayer=[CALayer layer];
+    imprintLayer.frame=CGRectMake(0, self.topView.bounds.size.height-0.5, self.topView.bounds.size.width, 0.5f);
+    imprintLayer.backgroundColor=[UIColor lightGrayColor].CGColor;
+    [self.topView addSublayer:imprintLayer];*/
     self.backLayer= [CALayer layer];
     self.backLayer.opacity = 0.0;
     self.backLayer.frame=self.topView.bounds;
@@ -117,8 +245,7 @@ typedef NS_ENUM(NSInteger, LayerSection) {
     self.topShadowLayer.frame = self.topView.bounds;
     self.topShadowLayer.colors = @[(id)[UIColor clearColor].CGColor, (id)[UIColor blackColor].CGColor];
     self.topShadowLayer.opacity = 0;
-    
-    [self.topView addSublayer:self.backLayer];
+   [self.topView addSublayer:self.backLayer];
     [self.topView addSublayer:self.topShadowLayer];
     [self.scaleLayer addSublayer:self.topView];
     
@@ -126,16 +253,27 @@ typedef NS_ENUM(NSInteger, LayerSection) {
 
 - (void)addBottomView
 {
-    
-    
     self.bottomView=[CALayer layer];
     self.bottomView.frame =CGRectMake(0.f,
                                       CGRectGetMidY(self.webView.bounds),
                                       CGRectGetWidth(self.webView.bounds),
                                       CGRectGetMidY(self.webView.bounds));
-    self.bottomView.backgroundColor=[UIColor clearColor].CGColor;
+    self.bottomView.backgroundColor=[UIColor blackColor].CGColor;
     self.bottomView.contentsGravity = kCAGravityResizeAspect;
-    
+   // self.bottomView.shadowColor=[UIColor whiteColor].CGColor;
+   // self.bottomView.shadowOffset=CGSizeMake(0,self.bottomView.bounds.size.height/87.0f);
+    //self.bottomView.shadowOpacity =0.85f ;
+    //self.bottomView.shadowRadius = 25.0f;
+    self.imprintLayer1=[CALayer layer];
+    self.imprintLayer1.frame=CGRectMake(0, self.bottomView.bounds.origin.y+0.6f, self.bottomView.bounds.size.width, 0.3f);
+    self.imprintLayer1.backgroundColor=[UIColor blackColor].CGColor;
+    //[self.bottomView addSublayer:self.imprintLayer1];
+    self.imprintLayer2=[CALayer layer];
+    self.imprintLayer2.frame=CGRectMake(0, self.bottomView.bounds.origin.y+1.7f, self.bottomView.bounds.size.width, 0.3f);
+    self.imprintLayer2.backgroundColor=[UIColor blackColor].CGColor;
+    //[self.bottomView addSublayer:self.imprintLayer2];
+    self.imprintLayer1.opacity=0.06f;
+    self.imprintLayer2.opacity=0.03f;
     self.bottomShadowLayer = [CAGradientLayer layer];
     self.bottomShadowLayer.frame = self.bottomView.bounds;
     self.bottomShadowLayer.colors = @[(id)[UIColor blackColor].CGColor, (id)[UIColor clearColor].CGColor];
@@ -155,13 +293,10 @@ typedef NS_ENUM(NSInteger, LayerSection) {
 
 - (void)createFoldLayers
 {
-    self.webView.scrollView.scrollEnabled=NO;
     [self updateBottomAndTopView];
     self.superViewLayer.contents=(__bridge id)self.superViewImage.CGImage;
     UIImage *topImage = [self imageForSection:LayerSectionTop withImage:self.image];
-    // UIImage *backImage=[topImage blurredImage];
     self.topView.contents = (__bridge id)(topImage.CGImage);
-    //self.backLayer.contents=(__bridge id)(backImage.CGImage);
     UIImage *bottomImage = [self imageForSection:LayerSectionBottom withImage:self.image];
     self.bottomView.contents = (__bridge id)(bottomImage.CGImage);
     self.topShadowLayer.frame = self.topView.bounds;
@@ -170,13 +305,16 @@ typedef NS_ENUM(NSInteger, LayerSection) {
 -(BOOL)gestureRecognizerShouldBegin:(UIPanGestureRecognizer *)gestureRecognizer{
     if (gestureRecognizer==self.foldGestureRecognizer) {
         CGPoint location = [gestureRecognizer locationInView:self];
-        //CGPoint startingPoint=[gestureRecognizer translationInView:self];
-        //CGFloat angle=(-([[self.topView valueForKeyPath:@"transform.rotation.x"]floatValue]*(180/M_PI)));
-        if (self.webView.scrollView.contentOffset.y==0) {
-        return YES;
+        CGPoint startingPoint=[gestureRecognizer translationInView:self];
+        if (self.webView.scrollView.contentOffset.y==0 && startingPoint.y >0) {
+            self.webView.scrollView.scrollEnabled=NO;
+
+            return YES;
         }
     else{
-        if (location.y<=60) {
+        if (location.y<=80) {
+            self.webView.scrollView.scrollEnabled=NO;
+
             return YES;
         }
         else{
@@ -192,9 +330,10 @@ typedef NS_ENUM(NSInteger, LayerSection) {
 {
     CGPoint location = [recognizer locationInView:self];
     CGPoint startingPoint=[recognizer translationInView:self];
-    
+    self.backButton.hidden=YES;
+    self.forwardButton.hidden=YES;
+    self.pullDownLayer.opacity=0;
     if (recognizer.state == UIGestureRecognizerStateBegan) {
-        
         self.initialLocation = location.y;
         [self createFoldLayers];
     }
@@ -230,7 +369,7 @@ typedef NS_ENUM(NSInteger, LayerSection) {
     if (recognizer.state == UIGestureRecognizerStateEnded || recognizer.state == UIGestureRecognizerStateCancelled) {
         CGFloat angle=(-([[self.topView valueForKeyPath:@"transform.rotation.x"]floatValue]*(180/M_PI)));
 
-        if (angle < 30){
+        if (angle < 45){
         [self rotateToOriginWithVelocity:0];
         [self rescaleLayer];
         recognizer.enabled=NO;}
@@ -271,16 +410,17 @@ typedef NS_ENUM(NSInteger, LayerSection) {
         scaleAnimation.toValue=[NSValue valueWithCGSize:CGSizeMake(1, 1)];
     }
     if (self.adjustRotationSpeed) {
-    rotationAnimation.duration=(-rotationAngle*(180/M_PI))/1200;
+    rotationAnimation.duration=(-rotationAngle*(180/M_PI))/1400;
     }
     else{
         rotationAnimation.duration=0.01;
     }
     [rotationAnimation setCompletionBlock:^(POPAnimation *anim, BOOL finished) {
-        //self.adjustRotationSpeed=NO;
+        if (finished) {
+            self.adjustRotationSpeed=NO;
+        }
     }];
     rotationAnimation.toValue = @(rotationAngle);
-    
     [self.scaleLayer pop_addAnimation:translateAnimation forKey:@"translateAnimation"];
     [self.topView pop_addAnimation:rotationAnimation forKey:@"rotationAnimation"];
     [self.scaleLayer pop_addAnimation:scaleAnimation forKey:@"scaleAnimation"];
@@ -319,7 +459,9 @@ typedef NS_ENUM(NSInteger, LayerSection) {
     rotateToCloseAnimation.toValue = @(-M_PI);
     rotateToCloseAnimation.delegate = self;
     [scaleToCloseAnimation setCompletionBlock:^(POPAnimation *anim, BOOL finished) {
-        [self removeFromSuperview];
+        if (finished) {
+            [self removeFromSuperview];
+        }
     }];
     [self.topView pop_addAnimation:rotateToCloseAnimation forKey:@"rotationToCloseAnimation"];
     [self.scaleLayer pop_addAnimation:scaleToCloseAnimation forKey:@"scaleToCloseAnimation"];
@@ -327,14 +469,27 @@ typedef NS_ENUM(NSInteger, LayerSection) {
 - (void)rotateToOriginWithVelocity:(CGFloat)velocity
 {
     POPSpringAnimation *rotationAnimation = [POPSpringAnimation animationWithPropertyNamed:kPOPLayerRotationX];
- 
+    POPBasicAnimation *imprintLayerAnimation=[POPBasicAnimation animationWithPropertyNamed:kPOPLayerOpacity];
+    imprintLayerAnimation.toValue=@(0);
+    imprintLayerAnimation.duration=0.04f;
+   // [self.imprintLayer1 pop_addAnimation:imprintLayerAnimation forKey:nil];
+    //[self.imprintLayer2 pop_addAnimation:imprintLayerAnimation forKey:nil];
+    [imprintLayerAnimation setCompletionBlock:^(POPAnimation *anim, BOOL finished) {
+        if (finished){
+            self.imprintLayer1=nil;
+            self.imprintLayer2=nil;
+        }
+    }];
     [rotationAnimation setCompletionBlock:^(POPAnimation *anim, BOOL finished) {
+        if (finished) {
         [self.superViewLayer removeFromSuperlayer];
         [self.topView removeFromSuperlayer];
         [self.bottomView removeFromSuperlayer];
         self.webView.scrollView.scrollEnabled=YES;
         self.foldGestureRecognizer.enabled=YES;
         self.adjustRotationSpeed=YES;
+            [self setupNavigationButton];
+        }
     }];
      if (velocity > 0) {
         rotationAnimation.velocity = @(velocity);
