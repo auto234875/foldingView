@@ -29,7 +29,7 @@ typedef NS_ENUM(NSInteger, LayerSection) {
 
 @property(nonatomic) UIImage *image;
 @property(nonatomic) CALayer *topView;
-@property(nonatomic) CALayer *backLayer;
+@property(nonatomic) CAGradientLayer *backLayer;
 @property(nonatomic)CALayer *bottomView;
 @property(nonatomic) CAGradientLayer *bottomShadowLayer;
 @property(nonatomic) CAGradientLayer *topShadowLayer;
@@ -48,6 +48,7 @@ typedef NS_ENUM(NSInteger, LayerSection) {
 @property(nonatomic)CALayer *pullDownLayer;
 @property(nonatomic,strong)CALayer *imprintLayer1;
 @property(nonatomic,strong)CALayer *imprintLayer2;
+@property(nonatomic,strong)CALayer *backImageLayer;
 @end
 
 @implementation FoldingView
@@ -182,7 +183,7 @@ typedef NS_ENUM(NSInteger, LayerSection) {
 -(CALayer*)scaleLayer{
     if (!_scaleLayer) {
         _scaleLayer=[CATransformLayer layer];
-        _scaleLayer.frame=self.bounds;
+        _scaleLayer.frame=self.webView.bounds;
     }
     if ([_scaleLayer superlayer] != self.layer) {
         [self.layer addSublayer:_scaleLayer];
@@ -197,7 +198,7 @@ typedef NS_ENUM(NSInteger, LayerSection) {
 }
 - (void)updateContentSnapshot:(UIView *)view afterScreenUpdate:(BOOL)update
 {
-    UIGraphicsBeginImageContextWithOptions(view.bounds.size, update,0);
+    UIGraphicsBeginImageContextWithOptions(view.bounds.size, YES,0);
     [view drawViewHierarchyInRect:view.bounds afterScreenUpdates:update];
     self.image=UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
@@ -205,7 +206,7 @@ typedef NS_ENUM(NSInteger, LayerSection) {
 
 - (void)captureSuperViewScreenShot:(UIView *)view afterScreenUpdate:(BOOL)update
 {
-    UIGraphicsBeginImageContextWithOptions(view.bounds.size, update,0);
+    UIGraphicsBeginImageContextWithOptions(view.bounds.size, YES,0);
     [view drawViewHierarchyInRect:view.bounds afterScreenUpdates:update];
     self.superViewImage=UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
@@ -222,33 +223,38 @@ typedef NS_ENUM(NSInteger, LayerSection) {
                                   CGRectGetWidth(self.webView.bounds),
                                   CGRectGetMidY(self.webView.bounds));
     self.topView.backgroundColor=[UIColor whiteColor].CGColor;
+    self.topView.opaque=YES;
     self.topView.anchorPoint = CGPointMake(0.5, 1.0);
     self.topView.position = CGPointMake(CGRectGetMidX(self.webView.frame), CGRectGetMidY(self.webView.frame));
     self.topView.transform = [self transform3D];
     self.topView.contentsGravity = kCAGravityResizeAspect;
     self.topView.allowsEdgeAntialiasing=YES;
-    //self.topView.shadowColor=[UIColor blackColor].CGColor;
-    //self.topView.shadowOffset=CGSizeMake(0, 0);
-    //self.topView.shadowOpacity = 1;
-    //self.topView.shadowRadius = 50.0;
-    //self.topView.shouldRasterize=YES;
-    /*CALayer *imprintLayer=[CALayer layer];
-    imprintLayer.frame=CGRectMake(0, self.topView.bounds.size.height-0.5, self.topView.bounds.size.width, 0.5f);
-    imprintLayer.backgroundColor=[UIColor lightGrayColor].CGColor;
-    [self.topView addSublayer:imprintLayer];*/
-    self.backLayer= [CALayer layer];
+    self.topView.shadowColor=[UIColor blackColor].CGColor;
+    self.topView.shadowOffset=CGSizeMake(0, 0);
+    self.topView.shadowOpacity = 0.85f;
+    self.topView.shadowRadius = 25.0;
+    self.backLayer= [CAGradientLayer layer];
     self.backLayer.opacity = 0.0;
     self.backLayer.frame=self.topView.bounds;
-    self.backLayer.backgroundColor=[UIColor whiteColor].CGColor;
+    //self.backLayer.backgroundColor=[UIColor whiteColor].CGColor;colorWithR:141 G:218 B:247 A:1.0];
+    UIColor *fluorescentColor=[UIColor colorWithRed:141/255.0f green:218/255.0f blue:247/255.0f alpha:0.0f];
+    self.backLayer.colors=@[(__bridge id)[UIColor clearColor].CGColor, (__bridge id)fluorescentColor.CGColor,(__bridge id)[UIColor whiteColor].CGColor,(__bridge id)[UIColor whiteColor].CGColor,(__bridge id)fluorescentColor.CGColor,(__bridge id)[UIColor clearColor].CGColor];
+    //self.backLayer.colors=@[(__bridge id)[UIColor clearColor].CGColor, (__bridge id)[UIColor whiteColor].CGColor,(__bridge id)[UIColor whiteColor].CGColor,(__bridge id)[UIColor clearColor].CGColor];
+    self.backLayer.startPoint=CGPointMake(0, 0);
+    self.backLayer.endPoint=CGPointMake(1, 1);
+    self.backImageLayer=[CALayer layer];
+    self.backImageLayer.opacity=0.0;
+    self.backImageLayer.frame=self.topView.bounds;
+    self.backImageLayer.opaque=YES;
     self.backLayer.allowsEdgeAntialiasing=YES;
     self.topShadowLayer = [CAGradientLayer layer];
     self.topShadowLayer.frame = self.topView.bounds;
     self.topShadowLayer.colors = @[(id)[UIColor clearColor].CGColor, (id)[UIColor blackColor].CGColor];
     self.topShadowLayer.opacity = 0;
-   [self.topView addSublayer:self.backLayer];
+   [self.topView addSublayer:self.backImageLayer];
+    [self.backImageLayer addSublayer:self.backLayer];
     [self.topView addSublayer:self.topShadowLayer];
     [self.scaleLayer addSublayer:self.topView];
-    
 }
 
 - (void)addBottomView
@@ -260,18 +266,19 @@ typedef NS_ENUM(NSInteger, LayerSection) {
                                       CGRectGetMidY(self.webView.bounds));
     self.bottomView.backgroundColor=[UIColor blackColor].CGColor;
     self.bottomView.contentsGravity = kCAGravityResizeAspect;
-   // self.bottomView.shadowColor=[UIColor whiteColor].CGColor;
-   // self.bottomView.shadowOffset=CGSizeMake(0,self.bottomView.bounds.size.height/87.0f);
-    //self.bottomView.shadowOpacity =0.85f ;
-    //self.bottomView.shadowRadius = 25.0f;
+    self.bottomView.opaque=YES;
+    self.bottomView.shadowColor=[UIColor blackColor].CGColor;
+    self.bottomView.shadowOffset=CGSizeMake(0,0);
+    self.bottomView.shadowOpacity =0.85f ;
+    self.bottomView.shadowRadius = 25.0f;
     self.imprintLayer1=[CALayer layer];
     self.imprintLayer1.frame=CGRectMake(0, self.bottomView.bounds.origin.y+0.6f, self.bottomView.bounds.size.width, 0.3f);
     self.imprintLayer1.backgroundColor=[UIColor blackColor].CGColor;
-    //[self.bottomView addSublayer:self.imprintLayer1];
+    [self.bottomView addSublayer:self.imprintLayer1];
     self.imprintLayer2=[CALayer layer];
     self.imprintLayer2.frame=CGRectMake(0, self.bottomView.bounds.origin.y+1.7f, self.bottomView.bounds.size.width, 0.3f);
     self.imprintLayer2.backgroundColor=[UIColor blackColor].CGColor;
-    //[self.bottomView addSublayer:self.imprintLayer2];
+    [self.bottomView addSublayer:self.imprintLayer2];
     self.imprintLayer1.opacity=0.06f;
     self.imprintLayer2.opacity=0.03f;
     self.bottomShadowLayer = [CAGradientLayer layer];
@@ -297,6 +304,7 @@ typedef NS_ENUM(NSInteger, LayerSection) {
     self.superViewLayer.contents=(__bridge id)self.superViewImage.CGImage;
     UIImage *topImage = [self imageForSection:LayerSectionTop withImage:self.image];
     self.topView.contents = (__bridge id)(topImage.CGImage);
+    self.backImageLayer.contents=(__bridge id)(topImage.CGImage);
     UIImage *bottomImage = [self imageForSection:LayerSectionBottom withImage:self.image];
     self.bottomView.contents = (__bridge id)(bottomImage.CGImage);
     self.topShadowLayer.frame = self.topView.bounds;
@@ -339,7 +347,8 @@ typedef NS_ENUM(NSInteger, LayerSection) {
     }
     
     if ([[self.topView valueForKeyPath:@"transform.rotation.x"] floatValue] < -M_PI_2) {
-        self.backLayer.opacity = 1.0;
+        self.backLayer.opacity = 0.15;
+        self.backImageLayer.opacity=1.0;
         [CATransaction begin];
         [CATransaction setValue:(id)kCFBooleanTrue
                          forKey:kCATransactionDisableActions];
@@ -348,6 +357,7 @@ typedef NS_ENUM(NSInteger, LayerSection) {
         [CATransaction commit];
     } else {
         self.backLayer.opacity = 0.0;
+        self.backImageLayer.opacity=0.0;
         [CATransaction begin];
         [CATransaction setValue:(id)kCFBooleanTrue
                          forKey:kCATransactionDisableActions];
@@ -360,6 +370,17 @@ typedef NS_ENUM(NSInteger, LayerSection) {
     if ([self isLocation:location inView:self]) {
         CGFloat angle=(-([[self.topView valueForKeyPath:@"transform.rotation.x"]floatValue]*(180/M_PI)));
         [self animateViewWithRotation:angle translation:startingPoint.x verticalPoint:location.y];
+        [self.bottomView setShadowPath:[UIBezierPath bezierPathWithRect:CGRectMake(self.bottomView.bounds.origin.x, self.bottomView.bounds.origin.y+50, self.bottomView.bounds.size.width, self.bottomView.bounds.size.height-50)].CGPath];
+        /*[self.topView setShadowPath:[UIBezierPath bezierPathWithRect:CGRectMake(self.scaleLayer.bounds.origin.x, self.topView.frame.origin.y-angle*1.3, self.scaleLayer.bounds.size.width, self.scaleLayer.bounds.size.height)].CGPath];*/
+        CGFloat shineGradientFactor=angle*0.02071429f;
+        //CGFloat shineGradientFactor=angle*0.020f;
+        [CATransaction begin];
+        [CATransaction setValue:[NSNumber numberWithFloat:0.016f] forKey:kCATransactionAnimationDuration];
+        //Perform CALayer actions, such as changing the layer contents, position, whatever.
+        self.backLayer.locations=@[[NSNumber numberWithFloat:-2.45f+shineGradientFactor],[NSNumber numberWithFloat:-2.4f+shineGradientFactor],[NSNumber numberWithFloat:-2.34f+shineGradientFactor],[NSNumber numberWithFloat:-2.09f+shineGradientFactor],[NSNumber numberWithFloat:-2.05f+shineGradientFactor],[NSNumber numberWithFloat:-2.0f+shineGradientFactor]];
+        //self.backLayer.locations=@[[NSNumber numberWithFloat:-2.45f+shineGradientFactor],[NSNumber numberWithFloat:-2.35f+shineGradientFactor],[NSNumber numberWithFloat:-2.10f+shineGradientFactor],[NSNumber numberWithFloat:-2.0f+shineGradientFactor]];
+        [CATransaction commit];
+
 }
     else {
         recognizer.enabled = NO;
@@ -472,12 +493,13 @@ typedef NS_ENUM(NSInteger, LayerSection) {
     POPBasicAnimation *imprintLayerAnimation=[POPBasicAnimation animationWithPropertyNamed:kPOPLayerOpacity];
     imprintLayerAnimation.toValue=@(0);
     imprintLayerAnimation.duration=0.04f;
-   // [self.imprintLayer1 pop_addAnimation:imprintLayerAnimation forKey:nil];
-    //[self.imprintLayer2 pop_addAnimation:imprintLayerAnimation forKey:nil];
+   [self.imprintLayer1 pop_addAnimation:imprintLayerAnimation forKey:nil];
+    [self.imprintLayer2 pop_addAnimation:imprintLayerAnimation forKey:nil];
     [imprintLayerAnimation setCompletionBlock:^(POPAnimation *anim, BOOL finished) {
         if (finished){
             self.imprintLayer1=nil;
             self.imprintLayer2=nil;
+            self.bottomView.shadowOpacity=0;
         }
     }];
     [rotationAnimation setCompletionBlock:^(POPAnimation *anim, BOOL finished) {
@@ -523,7 +545,8 @@ typedef NS_ENUM(NSInteger, LayerSection) {
     CGRect rect = CGRectMake(0.f, 0.f, image.size.width*2, image.size.height);
     if (section == LayerSectionBottom) {
         rect.origin.y = image.size.height / 1.f;
-    }
+
+        }
     
     CGImageRef imgRef = CGImageCreateWithImageInRect(image.CGImage, rect);
     UIImage *imagePart = [UIImage imageWithCGImage:imgRef];
@@ -536,16 +559,6 @@ typedef NS_ENUM(NSInteger, LayerSection) {
 - (void)pop_animationDidApply:(POPAnimation *)anim
 {
     self.angle=(-([[self.topView valueForKeyPath:@"transform.rotation.x"]floatValue]*(180/M_PI)));
-    CGFloat currentValue = [[anim valueForKey:@"currentValue"] floatValue];
-    if (currentValue > -M_PI_2) {
-        self.backLayer.opacity = 0.f;
-        [CATransaction begin];
-        [CATransaction setValue:(id)kCFBooleanTrue
-                         forKey:kCATransactionDisableActions];
-        self.bottomShadowLayer.opacity = -currentValue/M_PI;
-        self.topShadowLayer.opacity = -currentValue/M_PI;
-        [CATransaction commit];
-    }
 }
 
 @end
