@@ -12,6 +12,4 @@
 
 - (id)initWithFrame:(CGRect)frame request:(NSURLRequest*)request;
 - (void)captureSuperViewScreenShot:(UIView *)view afterScreenUpdate:(BOOL)update;
-@property(nonatomic)UIImage *superViewImage;
-
 @end

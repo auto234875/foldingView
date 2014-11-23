@@ -37,69 +37,50 @@ typedef NS_ENUM(NSInteger, LayerSection) {
 @property(nonatomic)WKWebView *webView;
 @property(nonatomic)CALayer *superViewLayer;
 @property(nonatomic)UIPanGestureRecognizer *foldGestureRecognizer;
-@property(nonatomic)CATransformLayer *scaleLayer;
+@property(nonatomic)CATransformLayer *scaleNTranslationLayer;
 @property(nonatomic)CGFloat angle;
 @property(nonatomic)BOOL adjustRotationSpeed;
 @property(nonatomic,strong)UIProgressView *progressView;
 @property(nonatomic,strong)UIButton *backButton;
 @property(nonatomic,strong)UIButton *forwardButton;
-@property(nonatomic)NSTimeInterval lastOffsetCapture;
-@property(nonatomic)CGPoint lastOffset;
 @property(nonatomic)CALayer *pullDownLayer;
 @property(nonatomic,strong)CALayer *imprintLayer1;
 @property(nonatomic,strong)CALayer *imprintLayer2;
 @property(nonatomic,strong)CATextLayer *backImageLayer;
+@property(nonatomic,strong)UIImage *superViewImage;
 @end
 
 @implementation FoldingView
--(void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView{
-    CGPoint translation = [scrollView.panGestureRecognizer translationInView:scrollView.superview];
-    
-    if(translation.y >0)
-    {
-        CGPoint currentOffset = scrollView.contentOffset;
-        NSTimeInterval currentTime = [NSDate timeIntervalSinceReferenceDate];
-        
-        NSTimeInterval timeDiff = currentTime - self.lastOffsetCapture;
-        if(timeDiff > 0.1) {
-            CGFloat distance = currentOffset.y - self.lastOffset.y;
-            //The multiply by 10, / 1000 isn't really necessary.......
-            CGFloat scrollSpeedNotAbs = (distance * 10) / 1000; //in pixels per millisecond
-            CGFloat scrollSpeed = fabsf(scrollSpeedNotAbs);
-            if (scrollSpeed > 0.5) {
-                [self setupNavigationButton];
-                self.pullDownLayer.opacity=0.4f;
-            } else {
-                NSLog(@"Slow");
-            }
-            
-            self.lastOffset = currentOffset;
-            self.lastOffsetCapture = currentTime;
-        }
-    } else if (translation.y < 0)
-    {
+-(void)scrollViewDidScroll:(UIScrollView *)scrollView{
+    CGPoint translation = [scrollView.panGestureRecognizer translationInView:scrollView];
+    if (translation.y < 0 ) {
         self.backButton.hidden=YES;
         self.forwardButton.hidden=YES;
         self.pullDownLayer.opacity=0;
     }
+    else{
+        CGPoint velocity=[scrollView.panGestureRecognizer velocityInView:scrollView];
+        //velocity.y > x , lower x - higher sensitivity
+        if (velocity.y > 1200) {
+            [self setupNavigationButton];
+            self.pullDownLayer.opacity=0.4f;
+        }
+    }
 
 }
+-(void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView{
+    if (scrollView.contentOffset.y==0) {
+        [self setupNavigationButton];
+        self.pullDownLayer.opacity=0.4f;
+    }
+}
 -(void)setupNavigationButton{
-    if (self.webView.canGoBack) {
-        self.backButton.hidden=NO;
-    }
-    else{
-        self.backButton.hidden=YES;
-    }
-    if (self.webView.canGoForward) {
-        self.forwardButton.hidden=NO;
-    }
-    else{
-        self.forwardButton.hidden=YES;
-    }
+    self.backButton.hidden=self.webView.canGoBack ? NO : YES;
+    self.forwardButton.hidden=self.webView.canGoForward?NO:YES;
 }
 -(void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation{
     [self setupNavigationButton];
+    self.pullDownLayer.opacity=0.4f;
 }
 - (id)initWithFrame:(CGRect)frame request:(NSURLRequest*)request
 {
@@ -111,7 +92,7 @@ typedef NS_ENUM(NSInteger, LayerSection) {
         _webView=[[WKWebView alloc] initWithFrame:CGRectMake(0, 0, self.bounds.size.width,self.bounds.size.height) configuration:configuration];
         _progressView=[[UIProgressView alloc] initWithFrame:CGRectMake(0, 0, _webView.bounds.size.width,0)];
         _progressView.progressViewStyle=UIProgressViewStyleBar;
-        _progressView.alpha=0.3f;
+        _progressView.alpha=0.4f;
         _webView.navigationDelegate=self;
         _progressView.tintColor=[UIColor blackColor];
         _progressView.trackTintColor=[UIColor lightGrayColor];
@@ -119,8 +100,6 @@ typedef NS_ENUM(NSInteger, LayerSection) {
         [_webView addObserver:self forKeyPath:@"estimatedProgress" options:NSKeyValueObservingOptionNew context:NULL];
         [_webView loadRequest:request];
         _webView.scrollView.delegate=self;
-        _lastOffsetCapture=[NSDate timeIntervalSinceReferenceDate];
-        _lastOffset=_webView.scrollView.contentOffset;
         _pullDownLayer=[CALayer layer];
         _pullDownLayer.frame=CGRectMake(_webView.bounds.size.width/2 - 25,60, 50, 20);
         _pullDownLayer.contents=(__bridge id)([UIImage imageNamed:@"down"].CGImage);
@@ -180,15 +159,15 @@ typedef NS_ENUM(NSInteger, LayerSection) {
 -(BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer{
     return YES;
 }
--(CALayer*)scaleLayer{
-    if (!_scaleLayer) {
-        _scaleLayer=[CATransformLayer layer];
-        _scaleLayer.frame=self.webView.bounds;
+-(CALayer*)scaleNTranslationLayer{
+    if (!_scaleNTranslationLayer) {
+        _scaleNTranslationLayer=[CATransformLayer layer];
+        _scaleNTranslationLayer.frame=self.webView.bounds;
     }
-    if ([_scaleLayer superlayer] != self.layer) {
-        [self.layer addSublayer:_scaleLayer];
+    if ([_scaleNTranslationLayer superlayer] != self.layer) {
+        [self.layer addSublayer:_scaleNTranslationLayer];
     }
-    return _scaleLayer;
+    return _scaleNTranslationLayer;
 }
 
 - (void)updateBottomAndTopView {
@@ -244,7 +223,7 @@ typedef NS_ENUM(NSInteger, LayerSection) {
    [self.topView addSublayer:self.backImageLayer];
     [self.backImageLayer addSublayer:self.backLayer];
     [self.topView addSublayer:self.topShadowLayer];
-    [self.scaleLayer addSublayer:self.topView];
+    [self.scaleNTranslationLayer addSublayer:self.topView];
 }
 -(void)setupBackGradientLayer{
     self.backLayer= [CAGradientLayer layer];
@@ -311,7 +290,7 @@ typedef NS_ENUM(NSInteger, LayerSection) {
     self.bottomShadowLayer.opacity = 0;
     
     [self.bottomView addSublayer:self.bottomShadowLayer];
-    [self.scaleLayer addSublayer:self.bottomView];
+    [self.scaleNTranslationLayer addSublayer:self.bottomView];
 }
 
 - (void)addGestureRecognizers
@@ -397,9 +376,8 @@ typedef NS_ENUM(NSInteger, LayerSection) {
         [self.bottomView setShadowPath:[UIBezierPath bezierPathWithRect:CGRectMake(self.bottomView.bounds.origin.x, self.bottomView.bounds.origin.y+50, self.bottomView.bounds.size.width, self.bottomView.bounds.size.height-50)].CGPath];
         CGFloat shineGradientFactor=angle*0.02071429f;
         [CATransaction begin];
-        [CATransaction setValue:[NSNumber numberWithFloat:0.016f] forKey:kCATransactionAnimationDuration];
+        [CATransaction setValue:@0.016f forKey:kCATransactionAnimationDuration];
         self.backLayer.locations=@[[NSNumber numberWithFloat:-2.45f+shineGradientFactor],[NSNumber numberWithFloat:-2.4f+shineGradientFactor],[NSNumber numberWithFloat:-2.34f+shineGradientFactor],[NSNumber numberWithFloat:-2.09f+shineGradientFactor],[NSNumber numberWithFloat:-2.05f+shineGradientFactor],[NSNumber numberWithFloat:-2.0f+shineGradientFactor]];
-        
         [CATransaction commit];
 
 }
@@ -463,17 +441,19 @@ typedef NS_ENUM(NSInteger, LayerSection) {
         }
     }];
     rotationAnimation.toValue = @(rotationAngle);
-    [self.scaleLayer pop_addAnimation:translateAnimation forKey:@"translateAnimation"];
+    [self.scaleNTranslationLayer pop_addAnimation:translateAnimation forKey:@"translateAnimation"];
     [self.topView pop_addAnimation:rotationAnimation forKey:@"rotationAnimation"];
-    [self.scaleLayer pop_addAnimation:scaleAnimation forKey:@"scaleAnimation"];
+    [self.scaleNTranslationLayer pop_addAnimation:scaleAnimation forKey:@"scaleAnimation"];
 }
 -(void)rescaleLayer{
+    
     const CGFloat scaleConversionFactor= 1-(self.angle/650);
     const CGFloat maxScaleAngle=90.0f;
     const CGFloat maxDownScaleConversionFactor= 1-(maxScaleAngle/650);
     POPSpringAnimation *scaleAnimation=[POPSpringAnimation animationWithPropertyNamed:kPOPLayerScaleXY];
     POPSpringAnimation *translateAnimation=[POPSpringAnimation animationWithPropertyNamed:kPOPLayerTranslationX];
     translateAnimation.toValue=@(0);
+    
     if (self.angle > 0  && self.angle <= maxScaleAngle) {
         scaleAnimation.toValue=[NSValue valueWithCGSize:CGSizeMake(scaleConversionFactor, scaleConversionFactor)];
     }
@@ -483,8 +463,8 @@ typedef NS_ENUM(NSInteger, LayerSection) {
     else{
         scaleAnimation.toValue=[NSValue valueWithCGSize:CGSizeMake(1, 1)];
     }
-    [self.scaleLayer pop_addAnimation:scaleAnimation forKey:@"scaleAnimation"];
-    [self.scaleLayer pop_addAnimation:translateAnimation forKey:@"translateAnimation"];
+    [self.scaleNTranslationLayer pop_addAnimation:scaleAnimation forKey:@"scaleAnimation"];
+    [self.scaleNTranslationLayer pop_addAnimation:translateAnimation forKey:@"translateAnimation"];
 }
 
 -(void)closeWithVelocity:(CGFloat)velocity{
@@ -506,7 +486,7 @@ typedef NS_ENUM(NSInteger, LayerSection) {
         }
     }];
     [self.topView pop_addAnimation:rotateToCloseAnimation forKey:@"rotationToCloseAnimation"];
-    [self.scaleLayer pop_addAnimation:scaleToCloseAnimation forKey:@"scaleToCloseAnimation"];
+    [self.scaleNTranslationLayer pop_addAnimation:scaleToCloseAnimation forKey:@"scaleToCloseAnimation"];
 }
 - (void)rotateToOriginWithVelocity:(CGFloat)velocity
 {
@@ -566,9 +546,7 @@ typedef NS_ENUM(NSInteger, LayerSection) {
     CGRect rect = CGRectMake(0.f, 0.f, image.size.width*2, image.size.height);
     if (section == LayerSectionBottom) {
         rect.origin.y = image.size.height / 1.f;
-
-        }
-    
+}
     CGImageRef imgRef = CGImageCreateWithImageInRect(image.CGImage, rect);
     UIImage *imagePart = [UIImage imageWithCGImage:imgRef];
     CGImageRelease(imgRef);
