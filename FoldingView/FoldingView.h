@@ -10,6 +10,12 @@
 
 @interface FoldingView : UIView
 
-- (id)initWithFrame:(CGRect)frame request:(NSURLRequest*)request;
+- (id)initWithFrame:(CGRect)frame;
 - (void)captureSuperViewScreenShot:(UIView *)view afterScreenUpdate:(BOOL)update;
+-(void)handlePanControl;
+-(void)rotateToOriginCompletionBlockMethod;
+@property(nonatomic,readonly)UIPanGestureRecognizer *foldGestureRecognizer;
+@property(nonatomic,strong)UIView *subclassView;
+
+
 @end

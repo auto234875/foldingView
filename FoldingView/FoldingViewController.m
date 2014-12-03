@@ -7,7 +7,7 @@
 //
 
 #import "FoldingViewController.h"
-#import "FoldingView.h"
+#import "FoldingWebView.h"
 #import <QuartzCore/QuartzCore.h>
 #import "POP/POP.h"
 #import "Colours.h"
@@ -58,7 +58,7 @@
     NSURL *url=[NSURL URLWithString:@"http://www.google.com"];
     NSURLRequest *request=[NSURLRequest requestWithURL:url];
     CGRect frame = CGRectMake(0, -self.view.bounds.size.height, self.view.bounds.size.width, self.view.bounds.size.height);
-    FoldingView *foldView = [[FoldingView alloc] initWithFrame:frame request:request];
+    FoldingWebView *foldView = [[FoldingWebView alloc] initWithFrame:frame request:request];
     [foldView captureSuperViewScreenShot:self.view afterScreenUpdate:YES];
     [self.view addSubview:foldView];
     POPSpringAnimation *segueAnimation = [POPSpringAnimation animationWithPropertyNamed:kPOPViewFrame];

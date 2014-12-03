@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		18CAB477024FBC8133837F55 /* libPods.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 33C6F0342D6DA70F9FA16634 /* libPods.a */; };
 		522513AA1A19999B00D14C00 /* down.png in Resources */ = {isa = PBXBuildFile; fileRef = 522513A91A19999B00D14C00 /* down.png */; };
+		526E06B21A2E3CE800C22FF6 /* FoldingWebView.m in Sources */ = {isa = PBXBuildFile; fileRef = 526E06B11A2E3CE800C22FF6 /* FoldingWebView.m */; };
 		527F29AD1A04C1DF00E6F4EA /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 527F29AC1A04C1DF00E6F4EA /* Foundation.framework */; };
 		527F29AF1A04C1DF00E6F4EA /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 527F29AE1A04C1DF00E6F4EA /* CoreGraphics.framework */; };
 		527F29B11A04C1DF00E6F4EA /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 527F29B01A04C1DF00E6F4EA /* UIKit.framework */; };
@@ -41,6 +42,8 @@
 		33C6F0342D6DA70F9FA16634 /* libPods.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libPods.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		45F8ED58F3674F6B790849C8 /* Pods.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.release.xcconfig; path = "Pods/Target Support Files/Pods/Pods.release.xcconfig"; sourceTree = "<group>"; };
 		522513A91A19999B00D14C00 /* down.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = down.png; sourceTree = "<group>"; };
+		526E06B01A2E3CE800C22FF6 /* FoldingWebView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FoldingWebView.h; sourceTree = "<group>"; };
+		526E06B11A2E3CE800C22FF6 /* FoldingWebView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FoldingWebView.m; sourceTree = "<group>"; };
 		527F29A91A04C1DF00E6F4EA /* FoldingView.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FoldingView.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		527F29AC1A04C1DF00E6F4EA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		527F29AE1A04C1DF00E6F4EA /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
@@ -142,6 +145,8 @@
 				52C37C021A04C3A000D04EE3 /* UIImage+Blur.m */,
 				52C37BF91A04C31700D04EE3 /* FoldingView.h */,
 				52C37BFA1A04C31700D04EE3 /* FoldingView.m */,
+				526E06B01A2E3CE800C22FF6 /* FoldingWebView.h */,
+				526E06B11A2E3CE800C22FF6 /* FoldingWebView.m */,
 				52C37BFC1A04C32300D04EE3 /* FoldingViewController.h */,
 				52C37BFD1A04C32300D04EE3 /* FoldingViewController.m */,
 				527F29BB1A04C1E000E6F4EA /* AppDelegate.h */,
@@ -314,6 +319,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				52C37BFE1A04C32300D04EE3 /* FoldingViewController.m in Sources */,
+				526E06B21A2E3CE800C22FF6 /* FoldingWebView.m in Sources */,
 				527F29BD1A04C1E000E6F4EA /* AppDelegate.m in Sources */,
 				52C37C031A04C3A000D04EE3 /* UIImage+Blur.m in Sources */,
 				527F29B91A04C1E000E6F4EA /* main.m in Sources */,

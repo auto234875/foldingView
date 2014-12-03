@@ -26,11 +26,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "FoldingView/FoldingView.m"
-            timestampString = "438107671.1541"
+            timestampString = "439241300.282805"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "575"
-            endingLineNumber = "575"
+            startingLineNumber = "576"
+            endingLineNumber = "576"
             landmarkName = "@implementation FoldingView"
             landmarkType = "3">
          </BreakpointContent>
@@ -41,13 +41,13 @@
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "FoldingView/FoldingView.m"
-            timestampString = "438107485.519992"
+            filePath = "FoldingView/FoldingWebView.m"
+            timestampString = "439238799.350473"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "328"
-            endingLineNumber = "328"
-            landmarkName = "-gestureRecognizerShouldBegin:"
+            startingLineNumber = "26"
+            endingLineNumber = "26"
+            landmarkName = "-goForward"
             landmarkType = "5">
          </BreakpointContent>
       </BreakpointProxy>
@@ -58,12 +58,12 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "FoldingView/FoldingView.m"
-            timestampString = "438107485.519992"
+            timestampString = "439240240.674466"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "110"
-            endingLineNumber = "110"
-            landmarkName = "-initWithFrame:request:"
+            startingLineNumber = "48"
+            endingLineNumber = "48"
+            landmarkName = "-dealloc"
             landmarkType = "5">
          </BreakpointContent>
       </BreakpointProxy>
